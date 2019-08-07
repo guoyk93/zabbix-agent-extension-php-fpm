@@ -1,0 +1,6 @@
+github.com/blacked/go-zabbix v0.0.0-20170118040903-3c6a95ec4fdc h1:Ati6LK4Cd96ZjshZWdVSNq8e8E13krbSMskWJHfXpB4=
+github.com/blacked/go-zabbix v0.0.0-20170118040903-3c6a95ec4fdc/go.mod h1:MQFa+aV+n8IIKW8TvMLPCoq/HemkprtE8qU+pf8wXNo=
+github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815 h1:bWDMxwH3px2JBh6AyO7hdCn/PkvCZXii8TGj7sbtEbQ=
+github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
+github.com/tomasen/fcgi_client v0.0.0-20180423082037-2bb3d819fd19 h1:ZCmSnT6CLGhfoQ2lPEhL4nsJstKDCw1F1RfN8/smTCU=
+github.com/tomasen/fcgi_client v0.0.0-20180423082037-2bb3d819fd19/go.mod h1:SXTY+QvI+KTTKXQdg0zZ7nx0u94QWh8ZAwBQYsW9cqk=

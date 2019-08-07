@@ -24,8 +24,7 @@ clean-all: clean-deps
 
 build:
 	@echo Build
-	ln -s ${PWD}/vendor/ ${PWD}/vendor/src
-	GOPATH="${PWD}/vendor" go build -v -o .out/${BINARYNAME} -ldflags ${LDFLAGS} *.go
+	CGO_ENABLED=0 GO111MODULE=on GOARCH=amd64 GOOS=linux go build -v -o .out/${BINARYNAME} -ldflags ${LDFLAGS} *.go
 	@echo Done
 
 clean-deps:
