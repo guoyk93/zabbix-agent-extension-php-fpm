@@ -1,100 +1,87 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/tomasen/fcgi_client"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
-	"strconv"
-
-	zsend "github.com/blacked/go-zabbix"
-	docopt "github.com/docopt/docopt-go"
 )
-
-var version = "[manual build]"
 
 const (
-	noneValue = "None"
+	dftNetwork = "tcp"
+	dftAddress = "127.0.0.1:9000"
+	dftScript  = "/status"
+	dftKey     = "listen queue"
 )
 
+var (
+	optNetwork string
+	optAddress string
+	optScript  string
+	optKey     string
+)
+
+func exit(err *error) {
+	if *err != nil {
+		log.Println("exited with error:", (*err).Error())
+		os.Exit(1)
+	}
+}
+
+func argVal(idx int, out *string, dft string) {
+	if idx < len(os.Args) {
+		*out = os.Args[idx]
+	}
+	if len(*out) == 0 {
+		*out = dft
+	}
+}
+
 func main() {
-	usage := `zabbix-agent-extension-php-fpm
+	var err error
+	defer exit(&err)
 
-Usage:
-	zabbix-agent-extension-php-fpm [options] 
+	argVal(1, &optKey, dftKey)
+	argVal(2, &optNetwork, dftNetwork)
+	argVal(3, &optAddress, dftAddress)
+	argVal(4, &optScript, dftScript)
 
-Options:
-	-s --script <name>           Script name [default: /status]
-	-n --dial-network <type>     Type of dial networks [default: unix]
-	-a --dial-address <address>  Dial address [default: /run/php-fpm/php-fpm.sock]
-	            
-OPCache options:
-	-f --filename <name>         File name [default: None]
-	-o --opcache <url>           Opcahe stats url [default: None]
-	           
-Zabbix options:
-	-z --zabbix-host <zhost>     Hostname or IP address of zabbix server [default: 127.0.0.1]
-	-p --zabbix-port <zport>     Port of zabbix server [default: 10051]
-	--zabbix-prefix <prefix>     Add part of your prefix for key [default: None]
-               
-Misc options:  
-	-h --help                    Show this screen.
-`
-	args, _ := docopt.Parse(usage, nil, true, version, false)
-
-	zabbixHost := args["--zabbix-host"].(string)
-	zabbixPort, err := strconv.Atoi(args["--zabbix-port"].(string))
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+	var stats map[string]interface{}
+	if stats, err = status(optNetwork, optAddress, optScript); err != nil {
+		return
 	}
 
-	zabbixPrefix := args["--zabbix-prefix"].(string)
-	if zabbixPrefix == "None" {
-		zabbixPrefix = "php-fpm"
-	} else {
-		zabbixPrefix = fmt.Sprintf("%s.%s", zabbixPrefix, "php-fpm")
+	fmt.Printf("%v", stats[optKey])
+}
+
+func status(network, address string, script string) (status map[string]interface{}, err error) {
+	var client *fcgiclient.FCGIClient
+	if client, err = fcgiclient.Dial(network, address); err != nil {
+		return
+	}
+	defer client.Close()
+
+	var res *http.Response
+	if res, err = client.Get(map[string]string{
+		"SCRIPT_FILENAME": script,
+		"SCRIPT_NAME":     script,
+		"QUERY_STRING":    "json",
+	}); err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	var buf []byte
+	if buf, err = ioutil.ReadAll(res.Body); err != nil {
+		return
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+	if err = json.Unmarshal(buf, &status); err != nil {
+		return
 	}
 
-	fcgiScript := args["--script"].(string)
-	fcgiFilename := args["--filename"].(string)
-
-	dialNetwork := args["--dial-network"].(string)
-	dialAddress := args["--dial-address"].(string)
-
-	fcgiParams := make(map[string]string)
-	fcgiParams["SCRIPT_FILENAME"] = fcgiFilename
-	fcgiParams["SCRIPT_NAME"] = fcgiScript
-
-	stats := getStats(dialNetwork, dialAddress, fcgiParams)
-
-	var zabbixMetrics []*zsend.Metric
-	zabbixMetrics = createMetrics(stats, hostname, zabbixPrefix, zabbixMetrics)
-
-	opcacheURL := args["--opcache"].(string)
-
-	if opcacheURL != noneValue {
-		fcgiParams["SCRIPT_NAME"] = ""
-		fcgiParams["QUERY_STRING"] = opcacheURL
-		opcacheStats := getOpcacheStats(dialNetwork, dialAddress, fcgiParams)
-		zabbixMetrics = createOpcacheMetrics(
-			opcacheStats,
-			hostname,
-			zabbixPrefix,
-			zabbixMetrics,
-		)
-	}
-
-	packet := zsend.NewPacket(zabbixMetrics)
-	sender := zsend.NewSender(
-		zabbixHost,
-		zabbixPort,
-	)
-	sender.Send(packet)
-
-	fmt.Println("OK")
+	return
 }
