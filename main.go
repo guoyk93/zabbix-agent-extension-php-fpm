@@ -54,10 +54,14 @@ func main() {
 		return
 	}
 
-	fmt.Printf("%v", stats[optKey])
+	if optKey == "all" {
+		fmt.Printf("%+v", stats)
+	} else {
+		fmt.Printf("%v", stats[optKey])
+	}
 }
 
-func status(network, address string, script string) (status map[string]interface{}, err error) {
+func status(network, address string, script string) (stats map[string]interface{}, err error) {
 	var client *fcgiclient.FCGIClient
 	if client, err = fcgiclient.Dial(network, address); err != nil {
 		return
@@ -79,7 +83,7 @@ func status(network, address string, script string) (status map[string]interface
 		return
 	}
 
-	if err = json.Unmarshal(buf, &status); err != nil {
+	if err = json.Unmarshal(buf, &stats); err != nil {
 		return
 	}
 
