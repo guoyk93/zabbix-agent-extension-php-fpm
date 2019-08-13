@@ -18,6 +18,8 @@ const (
 )
 
 var (
+	envDebug = os.Getenv("DEBUG") == "true"
+
 	optNetwork string
 	optAddress string
 	optScript  string
@@ -54,10 +56,12 @@ func main() {
 		return
 	}
 
-	if optKey == "all" {
-		fmt.Printf("%+v", stats)
-	} else {
-		fmt.Printf("%v", stats[optKey])
+	if stats[optKey] == nil {
+		return
+	}
+
+	if val, ok := stats[optKey].(float64); ok {
+		fmt.Printf("%d", int64(val))
 	}
 }
 
@@ -81,6 +85,10 @@ func status(network, address string, script string) (stats map[string]interface{
 	var buf []byte
 	if buf, err = ioutil.ReadAll(res.Body); err != nil {
 		return
+	}
+
+	if envDebug {
+		fmt.Printf("%s\n", buf)
 	}
 
 	if err = json.Unmarshal(buf, &stats); err != nil {
