@@ -10,6 +10,12 @@ go build -o /usr/bin/zabbix-agent-extension-php-fpm
 
 # install the config file
 cp zabbix-agent-extension-php-fpm.conf /etc/zabbix/zabbix_agentd.conf.d/
+
+# test installation
+zabbix_agentd -t php-fpm.stats[listen\ queue]
+
+# restart zabbix agent
+systemctl restart zabbix-agent
 ```
 
 ### Arguments
